@@ -1,12 +1,22 @@
+# dependencies and build output
 node_modules
 .next
-.keys/
-.local/
-.data/
-.env*
-!.env.example
-deployments/localnet.json
+out
 *.tsbuildinfo
 next-env.d.ts
-.vercel
+
+# secrets: burner keypairs and env files. NEVER commit these.
+.keys/
+.env*
+!.env.example
+*.pem
+id.json
+
+# local data and caches
+.local/
+.data/
 test-ledger
+deployments/localnet.json
+.vercel
+.DS_Store
+npm-debug.log*

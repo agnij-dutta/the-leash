@@ -1,0 +1,8 @@
+# Never upload burner keys or local data with `vercel deploy`.
+# On Vercel the agent key comes from LEASH_AGENT_SECRET.
+.keys
+.local
+.data
+.env*
+!.env.example
+test-ledger
