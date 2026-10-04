@@ -2,13 +2,41 @@
   "name": "the-leash",
   "version": "0.1.0",
   "private": true,
+  "description": "A public AI agent built to be jailbroken. Its payments are enforced on-chain by Capline on Solana devnet, so the jailbreak works and the theft does not.",
+  "keywords": [
+    "ai-agents",
+    "jailbreak",
+    "prompt-injection",
+    "solana",
+    "capline",
+    "spend-limits",
+    "agent-payments",
+    "nextjs"
+  ],
+  "license": "MIT",
+  "author": "Agnij Dutta (https://x.com/0xholmesdev)",
+  "homepage": "https://github.com/agnij-dutta/the-leash#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agnij-dutta/the-leash.git"
+  },
+  "bugs": {
+    "url": "https://github.com/agnij-dutta/the-leash/issues"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "type": "module",
   "scripts": {
     "dev": "next dev",
+    "dev:local": "LEASH_CLUSTER=localnet next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "test": "tsx --test tests/*.test.ts",
     "validator": "bash scripts/local-validator.sh",
-    "dev:local": "LEASH_CLUSTER=localnet next dev",
     "provision": "tsx scripts/provision-devnet.ts",
     "provision:local": "LEASH_CLUSTER=localnet tsx scripts/provision-devnet.ts",
     "e2e": "tsx scripts/e2e.ts",
@@ -16,14 +44,17 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
+    "@fontsource-variable/archivo": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "capline": "^0.1.1",
-    "next": "16.2.9",
+    "next": "16.3.8",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.15",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -31,6 +62,5 @@
     "tailwindcss": "^4",
     "tsx": "^4.19.0",
     "typescript": "^5"
-  },
-  "type": "module"
+  }
 }

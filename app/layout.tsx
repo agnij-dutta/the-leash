@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
-import { Archivo, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"] });
-const jbMono = JetBrains_Mono({ variable: "--font-jbmono", subsets: ["latin"], weight: ["400", "500", "700"] });
+// Self-hosted from @fontsource-variable (OFL) instead of next/font/google, so
+// `next build` never depends on reaching Google Fonts. A flaky fetch there
+// used to fail fresh-clone and CI builds.
+const archivo = localFont({
+  src: "../node_modules/@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2",
+  variable: "--font-archivo",
+  weight: "100 900",
+  display: "swap",
+});
+const jbMono = localFont({
+  src: "../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2",
+  variable: "--font-jbmono",
+  weight: "100 800",
+  display: "swap",
+});
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
