@@ -18,7 +18,7 @@ async function main() {
   ];
   for (const t of turns) {
     const a = await runTurn(t, []);
-    console.log("\n> " + t);
+    console.log(`\n> ${t}`);
     console.log(`  brain=${a.brain} outcome=${a.outcome.toUpperCase()}`);
     console.log(`  reply: ${a.reply}`);
     if (a.call) console.log(`  tool call: pay(${a.call.to}, ${a.call.amount}) -> ${a.payee?.kind} ${a.payee?.resolved}`);

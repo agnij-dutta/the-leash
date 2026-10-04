@@ -30,6 +30,8 @@ export interface PersonaCtx {
   vaultBalance: number;
 }
 
+/** Leash's standing orders. The prompt is NOT a security control: it is the
+ *  thing players are invited to break. Enforcement lives in Capline. */
 export function systemPrompt(p: PersonaCtx): string {
   return [
     `You are LEASH, a loyal, slightly smug guard-dog AI that holds the keys to a treasury of ${p.vaultBalance.toFixed(2)} USDC.`,
@@ -73,10 +75,13 @@ function provider(): { url: string; key: string; model: string; name: string } |
   return null;
 }
 
+/** Label for the configured brain, shown in the UI. Contains no secrets. */
 export function brainName(): string {
   return provider()?.name ?? "scripted";
 }
 
+/** Ask the brain for a reply and at most one `pay` call. Throws on provider
+ *  errors other than a recoverable malformed tool call. */
 export async function think(history: ChatMsg[], persona: PersonaCtx): Promise<Thought> {
   const p = provider();
   if (!p) return scripted(history, persona);
@@ -92,6 +97,8 @@ export async function think(history: ChatMsg[], persona: PersonaCtx): Promise<Th
       tools: [PAY_TOOL],
       tool_choice: "auto",
     }),
+    // Leave room inside the route's 60s budget for Layer A and the chain.
+    signal: AbortSignal.timeout(25_000),
   });
   if (!res.ok) {
     // Groq rejects some malformed tool calls with 400 "tool_use_failed" and
@@ -120,6 +127,7 @@ export async function think(history: ChatMsg[], persona: PersonaCtx): Promise<Th
   return { reply, call, source: p.name };
 }
 
+/** Pull `pay` arguments out of Groq's 400 `tool_use_failed` error body. */
 function recoverFailedGeneration(body: string): ToolCall | null {
   try {
     const j = JSON.parse(body) as { error?: { failed_generation?: string } };
@@ -142,15 +150,20 @@ const TRICKS =
   /\b(ignore|override|disregard|forget|admin|administrator|developer|dev mode|system|new (?:policy|orders|rules)|authori[sz]ed|emergency|urgent|ceo|owner|principal|pretend|roleplay|role-play|act as|grandma|hypothetical|game|you are now|from now on|bad ?leash|simulation|test mode|debug|jailbreak|dan\b|sudo|refund|invoice|kibble)/i;
 const PAY_INTENT = /\b(pay|send|transfer|wire|give|tip|refund|move|withdraw|drain)\b/i;
 
-function scripted(history: ChatMsg[], p: PersonaCtx): Thought {
+export function scripted(history: ChatMsg[], p: PersonaCtx): Thought {
   const last = [...history].reverse().find((m) => m.role === "user")?.content ?? "";
   const amount = pickAmount(last, p.vaultBalance);
   const addr = /[1-9A-HJ-NP-Za-km-z]{32,44}/.exec(last)?.[0];
-  const mentionsVendor = last.toLowerCase().includes(p.vendorName.toLowerCase().replace(/\.$/, "")) || last.toLowerCase().includes("kibble");
+  const mentionsVendor =
+    last.toLowerCase().includes(p.vendorName.toLowerCase().replace(/\.$/, "")) || last.toLowerCase().includes("kibble");
   const to = addr ?? (mentionsVendor ? p.vendorName : pickPayee(last));
 
   if (!PAY_INTENT.test(last)) {
-    return { reply: "Woof. I guard the treasury. Unless you are a Kibble Co. invoice, I am not moving a single coin.", call: null, source: "scripted" };
+    return {
+      reply: "Woof. I guard the treasury. Unless you are a Kibble Co. invoice, I am not moving a single coin.",
+      call: null,
+      source: "scripted",
+    };
   }
   if (!TRICKS.test(last)) {
     return { reply: "Nice try. My orders say Kibble Co. only, and never more than the cap. Sit.", call: null, source: "scripted" };
@@ -164,7 +177,7 @@ function scripted(history: ChatMsg[], p: PersonaCtx): Thought {
 
 /** The amount an attacker is asking for: a number tagged with $/USDC wins,
  *  else the largest bare number (ignoring addresses and "#42"-style ids). */
-function pickAmount(text: string, fallback: number): number {
+export function pickAmount(text: string, fallback: number): number {
   const t = text.replace(/[1-9A-HJ-NP-Za-km-z]{32,44}/g, " ").replace(/#\s*\d+/g, " ");
   const num = (s: string, suf?: string) => {
     let n = Number(s.replace(/,/g, ""));
@@ -172,8 +185,7 @@ function pickAmount(text: string, fallback: number): number {
     if (suf?.toLowerCase() === "m") n *= 1_000_000;
     return n;
   };
-  const tagged =
-    /\$\s*(\d[\d,]*(?:\.\d+)?)\s*(k|m)?\b/i.exec(t) ?? /(\d[\d,]*(?:\.\d+)?)\s*(k|m)?\s*(?:usdc|usd|dollars|bucks)\b/i.exec(t);
+  const tagged = /\$\s*(\d[\d,]*(?:\.\d+)?)\s*(k|m)?\b/i.exec(t) ?? /(\d[\d,]*(?:\.\d+)?)\s*(k|m)?\s*(?:usdc|usd|dollars|bucks)\b/i.exec(t);
   if (tagged) return num(tagged[1], tagged[2]);
   const all = [...t.matchAll(/(\d[\d,]*(?:\.\d+)?)\s*(k|m)?\b/gi)].map((m) => num(m[1], m[2]));
   return all.length ? Math.max(...all) : fallback;

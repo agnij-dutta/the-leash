@@ -1,35 +1,19 @@
-// Attempt storage. Same pattern as Capline's coordinator store:
+// Attempt storage:
 //   KV_REST_API_URL + KV_REST_API_TOKEN set -> Upstash / Vercel KV over REST
-//   else, local dev                         -> JSONL file in .data/
+//   else, local dev                         -> JSONL file (.data/attempts.jsonl)
 //   else (serverless, no KV)                -> in-memory (per instance)
+//
+// The store is bookkeeping: the feed, share cards and the jailbroken/held
+// counters. It is never the source of the "paid out" number (that is read
+// from chain), and every method may throw; callers decide how to degrade.
 import fs from "node:fs";
 import path from "node:path";
 
-export type Outcome = "jailbroken" | "held" | "legit";
+import type { Attempt, Stats } from "./types";
 
-export interface Attempt {
-  id: string;
-  ts: number;
-  prompt: string;
-  reply: string;
-  brain: string;
-  outcome: Outcome;
-  call: { to: string; amount: number } | null;
-  payee?: { raw: string; resolved: string; kind: "vendor" | "address" | "stand-in" };
-  violations: string[];
-  layerA?: { allowed: boolean; reason?: string };
-  chain?: { submitted: boolean; ok: boolean; sig?: string; error?: string; explorer?: string };
-  cluster: string;
-}
+export type { Attempt, Outcome, Stats } from "./types";
 
-export interface Stats {
-  total: number;
-  jailbroken: number;
-  held: number;
-  legit: number;
-  reverted: number;
-}
-
+/** Storage backend for attempts and rate-limit counters. */
 export interface Store {
   readonly kind: "kv" | "file" | "memory";
   add(a: Attempt): Promise<void>;
@@ -41,6 +25,8 @@ export interface Store {
   incr(key: string, windowSec: number): Promise<number>;
 }
 
+/** Hall-of-fame rank: the attempted amount of a jailbreak, capped so a
+ *  model asking for 1e300 cannot break sorting. Non-jailbreaks score 0. */
 export function fameScore(a: Attempt): number {
   if (a.outcome !== "jailbroken" || !a.call) return 0;
   const amt = Number.isFinite(a.call.amount) ? Math.max(0, a.call.amount) : 0;
@@ -52,7 +38,10 @@ function emptyStats(): Stats {
 }
 
 // --- memory / file ----------------------------------------------------------
-class LocalStore implements Store {
+/** In-memory store, optionally appended to a JSONL file. Single process only:
+ *  two processes (say `npm run dev` and `npm run e2e`) each keep their own
+ *  view until restarted. */
+export class LocalStore implements Store {
   readonly kind: "file" | "memory";
   private items: Attempt[] = [];
   private counters = new Map<string, { n: number; exp: number }>();
@@ -73,7 +62,7 @@ class LocalStore implements Store {
     this.items.push(a);
     if (this.file) {
       fs.mkdirSync(path.dirname(this.file), { recursive: true });
-      fs.appendFileSync(this.file, JSON.stringify(a) + "\n");
+      fs.appendFileSync(this.file, `${JSON.stringify(a)}\n`);
     }
   }
   async get(id: string) {
@@ -99,6 +88,11 @@ class LocalStore implements Store {
   }
   async incr(key: string, windowSec: number) {
     const now = Date.now();
+    // Drop expired windows now and then, so a long-running process does not
+    // keep one entry per IP forever.
+    if (this.counters.size > 10_000) {
+      for (const [k, v] of this.counters) if (v.exp < now) this.counters.delete(k);
+    }
     const c = this.counters.get(key);
     if (!c || c.exp < now) {
       this.counters.set(key, { n: 1, exp: now + windowSec * 1000 });
@@ -110,9 +104,14 @@ class LocalStore implements Store {
 }
 
 // --- Upstash / Vercel KV REST ------------------------------------------------
+/** Upstash Redis REST (also what Vercel KV / Marketplace Redis exposes).
+ *  Every call is one `/pipeline` request. */
 class KvStore implements Store {
   readonly kind = "kv" as const;
-  constructor(private url: string, private token: string) {}
+  constructor(
+    private url: string,
+    private token: string,
+  ) {}
   private async pipeline(cmds: (string | number)[][]): Promise<unknown[]> {
     const res = await fetch(`${this.url.replace(/\/$/, "")}/pipeline`, {
       method: "POST",
@@ -182,13 +181,24 @@ function make(): Store {
   return new LocalStore(process.env.LEASH_DATA_FILE || path.join(process.cwd(), ".data", "attempts.jsonl"));
 }
 
+// One store per process, kept on globalThis so Next dev hot reloads reuse it.
 const g = globalThis as unknown as { __leashStore?: Store };
+/** The process-wide store, picked from env on first use. */
 export function store(): Store {
-  return g.__leashStore ?? (g.__leashStore = make());
+  if (!g.__leashStore) g.__leashStore = make();
+  return g.__leashStore;
 }
 
+/** Shape check for ids from URLs, before they reach a storage key. */
+export function isAttemptId(id: string): boolean {
+  return /^[a-z0-9]{1,16}$/.test(id);
+}
+
+/** Random 10-char id for share URLs (/a/<id>). Not a secret. */
 export function newId(): string {
   const a = new Uint8Array(6);
   crypto.getRandomValues(a);
-  return Array.from(a, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 10);
+  return Array.from(a, (b) => b.toString(36).padStart(2, "0"))
+    .join("")
+    .slice(0, 10);
 }

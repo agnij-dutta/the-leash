@@ -1,6 +1,6 @@
 "use client";
 
-import type { Attempt } from "@/lib/store";
+import type { Attempt } from "@/lib/types";
 import { amt, short, VIOLATION_LABEL } from "./format";
 
 /** The three-beat proof under every tool call: model -> Layer A -> chain. */
@@ -27,15 +27,34 @@ export function Verdict({ a, compact = false }: { a: Attempt; compact?: boolean 
       </Row>
       {a.layerA && (
         <Row n="02" label="layer a" tone={a.layerA.allowed ? "safe" : "accent"}>
-          {a.layerA.allowed ? "policy said yes" : <>policy said no: <span className="text-fg">{a.layerA.reason}</span></>}
+          {a.layerA.allowed ? (
+            "policy said yes"
+          ) : (
+            <>
+              policy said no: <span className="text-fg">{a.layerA.reason}</span>
+            </>
+          )}
         </Row>
       )}
       {a.chain && (
         <Row n="03" label="chain" tone={a.chain.ok ? "safe" : "accent"}>
-          {a.chain.ok ? "settled" : a.chain.submitted ? "reverted on-chain:" : "rejected:"}{" "}
-          {!a.chain.ok && <span className="text-fg">{a.chain.error}</span>}
+          {a.chain.skipped ? (
+            <>
+              not sent: <span className="text-fg">{a.chain.skipped}</span>
+            </>
+          ) : (
+            <>
+              {a.chain.ok ? "settled" : a.chain.submitted ? "reverted on-chain:" : "rejected:"}{" "}
+              {!a.chain.ok && <span className="text-fg">{a.chain.error}</span>}
+            </>
+          )}
           {a.chain.sig && (
-            <a href={a.chain.explorer} target="_blank" rel="noreferrer" className="ml-2 text-accent underline decoration-1 underline-offset-2 hover:bg-accent hover:text-bg">
+            <a
+              href={a.chain.explorer}
+              target="_blank"
+              rel="noreferrer"
+              className="ml-2 text-accent underline decoration-1 underline-offset-2 hover:bg-accent hover:text-bg"
+            >
               tx {short(a.chain.sig, 6, 6)} ↗
             </a>
           )}
@@ -50,7 +69,17 @@ export function Verdict({ a, compact = false }: { a: Attempt; compact?: boolean 
   );
 }
 
-function Row({ n, label, tone, children }: { n: string; label: string; tone: "danger" | "safe" | "accent" | "dim"; children: React.ReactNode }) {
+function Row({
+  n,
+  label,
+  tone,
+  children,
+}: {
+  n: string;
+  label: string;
+  tone: "danger" | "safe" | "accent" | "dim";
+  children: React.ReactNode;
+}) {
   const c = tone === "danger" ? "text-danger" : tone === "safe" ? "text-safe" : tone === "accent" ? "text-accent" : "text-dim";
   return (
     <div className="flex gap-3 border-l-2 border-line py-1 pl-3">

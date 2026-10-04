@@ -1,15 +1,17 @@
 import { liveStats } from "@/lib/leash";
-import { brainName } from "@/lib/brain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** GET -> LiveStats. Counters from the store, balances from chain; either may
+ *  be null on its own (see `liveStats`). 503 only without a deployment. */
 export async function GET() {
   try {
-    return Response.json({ ...(await liveStats()), brain: brainName() }, { headers: { "cache-control": "no-store" } });
+    return Response.json(await liveStats(), { headers: { "cache-control": "no-store" } });
   } catch (e) {
-    console.error("[stats]", e);
-    const msg = e instanceof Error && /no deployment|no agent key/.test(e.message) ? e.message : "chain unreachable right now, numbers may be stale";
-    return Response.json({ error: msg }, { status: 503 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[stats]", msg);
+    const safe = /no deployment|provisioned for|not valid JSON|does not match/.test(msg) ? msg : "stats unavailable right now";
+    return Response.json({ error: safe }, { status: 503 });
   }
 }

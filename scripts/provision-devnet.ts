@@ -15,24 +15,25 @@
 // vendor + attacker token accounts -> mint the vault balance.
 // Writes public addresses to deployments/<cluster>.json.
 //
-// DEVNET ONLY: this script refuses any mainnet RPC.
+// DEVNET ONLY: `connection()` checks the RPC's genesis hash and refuses
+// mainnet, whatever the URL looks like.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import {
-  Connection,
+  type Connection,
   Ed25519Program,
   Keypair,
   LAMPORTS_PER_SOL,
-  PublicKey,
+  type PublicKey,
   SystemProgram,
   SYSVAR_INSTRUCTIONS_PUBKEY,
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { cluster, rpcUrl, explorer, type Deployment } from "../lib/config";
+import { cluster, connection, explorer, publicRpcUrl, type Deployment } from "../lib/config";
 import { program, mandatePda, vaultPda, PROGRAM_ID, BN } from "../lib/chain";
 
 const DECIMALS = 6;
@@ -87,8 +88,9 @@ async function ensureSol(conn: Connection, who: PublicKey, wantSol: number) {
 
 async function main() {
   const c = cluster();
-  const rpc = rpcUrl(c);
-  const conn = new Connection(rpc, "confirmed");
+  // Credential-free form: this goes into a file meant to be committed.
+  const rpc = publicRpcUrl(c);
+  const conn = await connection(c);
   console.log(`The Leash · provisioning on ${c} (${rpc})`);
 
   const prog = await conn.getAccountInfo(PROGRAM_ID);
@@ -148,15 +150,9 @@ async function main() {
 
   console.log(`4. create_mandate: ${MAX_PER_TX}/tx, ${TOTAL_CAP} total, allowlist=[${VENDOR_NAME}], ${DAYS}d…`);
   txs.createMandate = await program(conn, principal)
-    .methods.createMandate(
-      nonce,
-      agent.publicKey,
-      new BN(MAX_PER_TX * unit),
-      new BN(TOTAL_CAP * unit),
-      new BN(notAfter),
-      ap2Hash,
-      [vendor.publicKey],
-    )
+    .methods.createMandate(nonce, agent.publicKey, new BN(MAX_PER_TX * unit), new BN(TOTAL_CAP * unit), new BN(notAfter), ap2Hash, [
+      vendor.publicKey,
+    ])
     .accounts({
       principal: principal.publicKey,
       mint,
@@ -212,7 +208,7 @@ async function main() {
   };
   fs.mkdirSync(path.join(ROOT, "deployments"), { recursive: true });
   const out = path.join(ROOT, "deployments", `${c}.json`);
-  fs.writeFileSync(out, JSON.stringify(d, null, 2) + "\n");
+  fs.writeFileSync(out, `${JSON.stringify(d, null, 2)}\n`);
 
   console.log(`\nmandate live · ap2_verified=${ap2Verified}`);
   console.log(`  mandate  ${explorer(d.mandate, "address", c)}`);

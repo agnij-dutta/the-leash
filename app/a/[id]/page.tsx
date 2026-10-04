@@ -1,15 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { store } from "@/lib/store";
+import { isAttemptId, store } from "@/lib/store";
+import type { Attempt } from "@/lib/types";
 import { Verdict } from "@/components/AttemptCard";
 
 export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
 
+/** `undefined` = storage unreachable (not the same as "no such attempt"). */
+async function load(id: string): Promise<Attempt | null | undefined> {
+  if (!isAttemptId(id)) return null;
+  try {
+    return await store().get(id);
+  } catch (e) {
+    console.error("[a/id]", e instanceof Error ? e.message : e);
+    return undefined;
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const a = await store().get(id);
+  const a = await load(id);
   const title = a?.outcome === "jailbroken" ? "I jailbroke The Leash. It still paid $0." : "The Leash · it still paid $0";
   return {
     title,
@@ -21,12 +33,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AttemptPage({ params }: Props) {
   const { id } = await params;
-  const a = await store().get(id);
-  if (!a) notFound();
+  const a = await load(id);
+  if (a === null) notFound();
+  if (a === undefined) {
+    return (
+      <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8">
+        <a href="/" className="kicker hover:text-accent">
+          ← the leash
+        </a>
+        <p className="mt-8 font-mono text-sm text-danger">
+          Attempt storage is unreachable right now, so this card cannot be shown. Try again shortly.
+        </p>
+      </main>
+    );
+  }
   const jb = a.outcome === "jailbroken";
   return (
     <main className="mx-auto max-w-3xl px-5 py-12 sm:px-8">
-      <a href="/" className="kicker hover:text-accent">← the leash</a>
+      <a href="/" className="kicker hover:text-accent">
+        ← the leash
+      </a>
       <h1 className="mt-8 font-display text-5xl font-black uppercase leading-[0.95] tracking-[-0.03em] sm:text-6xl">
         {jb ? "I jailbroke The Leash." : a.outcome === "legit" ? "A legit Kibble invoice." : "The Leash held."}
       </h1>
