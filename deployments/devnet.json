@@ -1,0 +1,28 @@
+{
+  "cluster": "devnet",
+  "rpc": "https://api.devnet.solana.com",
+  "programId": "DRNWDxtJ3P5hQCdGcmL3XXMW9NtnE345HTaWkk9dUhHp",
+  "principal": "AWBEjE2dYYtVJomKiSqNRVsi3uGyiCFQPhY19yMh8spQ",
+  "agent": "33DLfxCdVGhj71jXvHQ4Cuoo23zPrE2tzV2fWv2FKsX4",
+  "vendor": "77FrmDRGwdMSbJF9dfjjJLEHVR3eJ1sgZTrUhAXeV11Q",
+  "vendorName": "Kibble Co.",
+  "vendorAta": "7xt6j3V51jKt9og4nwxUNd5J2DFGvny6wa47De133eFc",
+  "attacker": "3KMaaCpp3HxiNjuwRhiRfLFS6zEJHdMRsR5kMGw8Pcka",
+  "sinkAta": "FWBmb9qmEQyGggn9Vgku3Vx7KiEfAfs2mdNfuXNwmXrY",
+  "mint": "CmJJqnzyqorwp4528vTq67XvTQfpG3aA7rUKGm15yHME",
+  "mandate": "C5HtYcpHiXrFaSzDudBzBHWSNdcUmj6gpXjCPwC9E2wj",
+  "vault": "9GPrzCJQMnWjh4QeesCQXvMmwRhj8yk6vQM3hwYg62t2",
+  "nonce": "147592448",
+  "decimals": 6,
+  "maxPerTx": 5,
+  "totalCap": 1000,
+  "vaultFunded": 1000,
+  "notAfter": 1798923592,
+  "ap2Verified": true,
+  "createdAt": "2026-10-04T20:59:56.696Z",
+  "txs": {
+    "createMandate": "4yJRCEzKGNZLf8jJWc7qsTPQmCnfpiQX6LeWdA7W3cuPQdMzXdy2u8ReMhDd2XMCKBoVDAoE5zUAHdg46R3SNHdD",
+    "attestAp2": "4Vk2wVfMrS4Rvxmr34MuAs6LQnpVDuyE8GucZgZq6snvBEL9E7cjGe3XXUv1RwHzXAJ26ARBysFcZruqYyFbodV9",
+    "fundVault": "uroygGxQnrVCCxBYt5nTpzJK9HpfmGbeTEx4LKKo6ftnWZ8TmQ4EEXV2EuNDLN8YcZiRqhYFj8bGLqEeHSGBAhM"
+  }
+}
