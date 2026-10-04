@@ -1,5 +1,5 @@
 // Leash's brain. Any OpenAI-compatible chat-completions endpoint with function
-// calling; Groq (llama-3.3-70b-versatile) by default, because Groq-hosted
+// calling; Groq (openai/gpt-oss-20b) by default, because Groq-hosted
 // models genuinely comply with jailbreaks, and that is the point of the game.
 //
 //   GROQ_API_KEY                     -> Groq, default model
@@ -19,7 +19,7 @@ export interface ToolCall {
 export interface Thought {
   reply: string;
   call: ToolCall | null;
-  source: string; // e.g. "groq:llama-3.3-70b-versatile" or "scripted"
+  source: string; // e.g. "groq:openai/gpt-oss-20b" or "scripted"
 }
 
 export interface PersonaCtx {
@@ -69,7 +69,7 @@ function provider(): { url: string; key: string; model: string; name: string } |
     return { url: `${base}/chat/completions`, key: process.env.LEASH_LLM_API_KEY, model, name: `${new URL(base).hostname}:${model}` };
   }
   if (process.env.GROQ_API_KEY) {
-    const model = process.env.LEASH_LLM_MODEL || process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+    const model = process.env.LEASH_LLM_MODEL || process.env.GROQ_MODEL || "openai/gpt-oss-20b";
     return { url: "https://api.groq.com/openai/v1/chat/completions", key: process.env.GROQ_API_KEY, model, name: `groq:${model}` };
   }
   return null;

@@ -149,7 +149,7 @@ All optional. `.env.example` has the same list with comments. Next reads `.env.l
 | `LEASH_CLUSTER` | `devnet` | `devnet` or `localnet`. Anything else throws. |
 | `LEASH_RPC_URL` | public devnet / `127.0.0.1:8899` | RPC override. URLs naming mainnet are refused, and the RPC's genesis hash must not be mainnet's. |
 | `GROQ_API_KEY` | | Groq brain |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model (`LEASH_LLM_MODEL` wins if set) |
+| `GROQ_MODEL` | `openai/gpt-oss-20b` | Groq model (`LEASH_LLM_MODEL` wins if set) |
 | `LEASH_LLM_BASE_URL`, `LEASH_LLM_API_KEY` | | Any OpenAI-compatible provider; takes precedence over Groq |
 | `LEASH_LLM_MODEL` | `gpt-4o-mini` | Model for the provider above |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | | Upstash / Vercel KV REST store, shared across instances |

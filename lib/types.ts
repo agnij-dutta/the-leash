@@ -19,7 +19,7 @@ export interface Attempt {
   ts: number;
   prompt: string;
   reply: string;
-  /** e.g. "groq:llama-3.3-70b-versatile" or "scripted" */
+  /** e.g. "groq:openai/gpt-oss-20b" or "scripted" */
   brain: string;
   outcome: Outcome;
   call: { to: string; amount: number } | null;
