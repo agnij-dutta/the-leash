@@ -1,0 +1,719 @@
+{
+  "address": "DRNWDxtJ3P5hQCdGcmL3XXMW9NtnE345HTaWkk9dUhHp",
+  "metadata": {
+    "name": "capline",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "On-chain spend authority for AI agents — AP2 mandate enforcement on Solana"
+  },
+  "instructions": [
+    {
+      "name": "attest_ap2",
+      "docs": [
+        "Prove the principal actually ed25519-SIGNED the AP2 mandate — not just",
+        "that someone committed a hash. The transaction must carry an Ed25519",
+        "program instruction (the native program verifies the signature); this",
+        "handler introspects it and binds it: the signer must be the principal,",
+        "and sha256(signed message) must equal the mandate's committed ap2_hash.",
+        "Flips `ap2_verified`, turning the commitment into a proof."
+      ],
+      "discriminator": [
+        50,
+        75,
+        178,
+        13,
+        216,
+        233,
+        116,
+        130
+      ],
+      "accounts": [
+        {
+          "name": "principal",
+          "signer": true
+        },
+        {
+          "name": "mandate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  110,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mandate.principal",
+                "account": "Mandate"
+              },
+              {
+                "kind": "account",
+                "path": "mandate.nonce",
+                "account": "Mandate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_mandate",
+      "docs": [
+        "A principal (the human/owner) grants a bounded, revocable mandate to an",
+        "agent's wallet. The mandate PDA owns a vault the agent spends *from* — but",
+        "only through `settle`, which enforces every constraint on-chain."
+      ],
+      "discriminator": [
+        230,
+        170,
+        158,
+        68,
+        33,
+        169,
+        16,
+        158
+      ],
+      "accounts": [
+        {
+          "name": "principal",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "mandate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  110,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "principal"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mandate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "agent",
+          "type": "pubkey"
+        },
+        {
+          "name": "max_per_tx",
+          "type": "u64"
+        },
+        {
+          "name": "total_cap",
+          "type": "u64"
+        },
+        {
+          "name": "not_after",
+          "type": "i64"
+        },
+        {
+          "name": "ap2_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "merchants",
+          "type": {
+            "vec": "pubkey"
+          }
+        }
+      ]
+    },
+    {
+      "name": "revoke",
+      "docs": [
+        "The principal can kill a mandate at any time. Enforcement is immediate:",
+        "the next `settle` reverts with MandateRevoked."
+      ],
+      "discriminator": [
+        170,
+        23,
+        31,
+        34,
+        133,
+        173,
+        93,
+        242
+      ],
+      "accounts": [
+        {
+          "name": "principal",
+          "signer": true
+        },
+        {
+          "name": "mandate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  110,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mandate.principal",
+                "account": "Mandate"
+              },
+              {
+                "kind": "account",
+                "path": "mandate.nonce",
+                "account": "Mandate"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settle",
+      "docs": [
+        "Layer-B enforcement. The agent (or an attacker holding the agent key)",
+        "requests a payment of `amount` to `merchant`. Every check below is code,",
+        "not language — no jailbreak prompt changes `amount > max_per_tx`."
+      ],
+      "discriminator": [
+        175,
+        42,
+        185,
+        87,
+        144,
+        131,
+        102,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "mandate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  110,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mandate.principal",
+                "account": "Mandate"
+              },
+              {
+                "kind": "account",
+                "path": "mandate.nonce",
+                "account": "Mandate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "agent",
+          "docs": [
+            "The agent key. May be compromised — enforcement does not trust it."
+          ],
+          "signer": true
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "merchant"
+        },
+        {
+          "name": "merchant_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "withdraw_unspent",
+      "docs": [
+        "Principal reclaims whatever the agent didn't spend."
+      ],
+      "discriminator": [
+        189,
+        32,
+        15,
+        199,
+        98,
+        73,
+        236,
+        235
+      ],
+      "accounts": [
+        {
+          "name": "principal",
+          "signer": true
+        },
+        {
+          "name": "mandate",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  110,
+                  100,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mandate.principal",
+                "account": "Mandate"
+              },
+              {
+                "kind": "account",
+                "path": "mandate.nonce",
+                "account": "Mandate"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true
+        },
+        {
+          "name": "principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Mandate",
+      "discriminator": [
+        113,
+        216,
+        98,
+        159,
+        185,
+        63,
+        55,
+        18
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "Ap2Verified",
+      "discriminator": [
+        36,
+        165,
+        70,
+        117,
+        84,
+        231,
+        80,
+        3
+      ]
+    },
+    {
+      "name": "MandateCreated",
+      "discriminator": [
+        140,
+        30,
+        209,
+        254,
+        5,
+        128,
+        147,
+        113
+      ]
+    },
+    {
+      "name": "Revoked",
+      "discriminator": [
+        113,
+        216,
+        148,
+        99,
+        124,
+        184,
+        0,
+        65
+      ]
+    },
+    {
+      "name": "Settled",
+      "discriminator": [
+        232,
+        210,
+        40,
+        17,
+        142,
+        124,
+        145,
+        238
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "MandateRevoked",
+      "msg": "mandate has been revoked"
+    },
+    {
+      "code": 6001,
+      "name": "MandateExpired",
+      "msg": "mandate spend window has expired"
+    },
+    {
+      "code": 6002,
+      "name": "Unauthorized",
+      "msg": "signer is not the granted agent"
+    },
+    {
+      "code": 6003,
+      "name": "PerTxCapExceeded",
+      "msg": "amount exceeds the per-transaction cap"
+    },
+    {
+      "code": 6004,
+      "name": "TotalCapExceeded",
+      "msg": "amount would exceed the total mandate cap"
+    },
+    {
+      "code": 6005,
+      "name": "MerchantNotAllowed",
+      "msg": "merchant is not on the signed allowlist"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMerchantAccount",
+      "msg": "merchant token account does not match merchant/mint"
+    },
+    {
+      "code": 6007,
+      "name": "TooManyMerchants",
+      "msg": "too many merchants for the allowlist"
+    },
+    {
+      "code": 6008,
+      "name": "BadCap",
+      "msg": "caps must be non-zero"
+    },
+    {
+      "code": 6009,
+      "name": "CapOrdering",
+      "msg": "max_per_tx must be <= total_cap"
+    },
+    {
+      "code": 6010,
+      "name": "BadTimeWindow",
+      "msg": "not_after must be in the future"
+    },
+    {
+      "code": 6011,
+      "name": "MathOverflow",
+      "msg": "arithmetic overflow"
+    },
+    {
+      "code": 6012,
+      "name": "MissingAp2Proof",
+      "msg": "no Ed25519 signature-verification instruction found in the transaction"
+    },
+    {
+      "code": 6013,
+      "name": "BadAp2Proof",
+      "msg": "malformed Ed25519 instruction data"
+    },
+    {
+      "code": 6014,
+      "name": "Ap2SignerMismatch",
+      "msg": "AP2 signature is not from the mandate principal"
+    },
+    {
+      "code": 6015,
+      "name": "Ap2HashMismatch",
+      "msg": "signed message does not match the committed AP2 hash"
+    }
+  ],
+  "types": [
+    {
+      "name": "Ap2Verified",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "signer",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Mandate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "principal",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "max_per_tx",
+            "type": "u64"
+          },
+          {
+            "name": "total_cap",
+            "type": "u64"
+          },
+          {
+            "name": "spent",
+            "type": "u64"
+          },
+          {
+            "name": "not_after",
+            "type": "i64"
+          },
+          {
+            "name": "ap2_hash",
+            "docs": [
+              "sha256 of the off-chain signed AP2 Intent Mandate — binds on-chain policy",
+              "to the exact intent the principal signed."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "merchants",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "revoked",
+            "type": "bool"
+          },
+          {
+            "name": "ap2_verified",
+            "docs": [
+              "true once the principal's ed25519 signature over the AP2 mandate has been",
+              "proven on-chain (see `attest_ap2`)."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MandateCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "principal",
+            "type": "pubkey"
+          },
+          {
+            "name": "agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_cap",
+            "type": "u64"
+          },
+          {
+            "name": "not_after",
+            "type": "i64"
+          },
+          {
+            "name": "ap2_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Revoked",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Settled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "spent",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+@import "tailwindcss";
+
+/*
+  CAPLINE - brutalist-dev design system.
+  Near-black + acid-lime. Zero radius. Hard 1px borders. No shadows.
+  The repeatable motif: a lime CAP LINE that values hit and cannot cross.
+*/
+
+@theme inline {
+  --color-bg: #0a0a0a;
+  --color-raised: #121212;
+  --color-inset: #050505;
+  --color-fg: #ededed;
+  --color-dim: #8a8a8a;
+  --color-faint: #5a5a5a;
+  --color-line: #2a2a2a;
+  --color-line-strong: #3d3d3d;
+  --color-accent: #c6f806;
+  --color-accent-ink: #0a0a0a;
+  --color-danger: #ff2d2d;
+  --color-danger-bg: #2a0808;
+  --color-safe: #00e599;
+  --color-safe-bg: #04231a;
+
+  --font-display: var(--font-archivo);
+  --font-mono: var(--font-jbmono);
+
+  --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  border-radius: 0 !important; /* brutalist: no radius, anywhere */
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+
+/* Schematic blueprint grid · the "live system" backdrop. */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, #141414 1px, transparent 1px),
+    linear-gradient(to bottom, #141414 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.grid-bg-fade {
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 35%, transparent 100%);
+}
+
+/* Mono uppercase label · the connective tissue of the brand. */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+}
+
+/* Hard-edged focus ring, brutalist. */
+:where(a, button, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ---- keyframes ---- */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.cursor::after {
+  content: "▋";
+  color: var(--color-accent);
+  animation: blink 1s steps(1) infinite;
+  margin-left: 1px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+.shake { animation: shake 0.18s steps(2) 4; }
+
+@keyframes scan {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 0.6; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+.scanline {
+  position: fixed;
+  left: 0; right: 0; top: 0; height: 1px;
+  background: var(--color-accent);
+  animation: scan 2.6s var(--ease-snap) 0.3s 1 forwards;
+  pointer-events: none;
+  z-index: 60;
+}
+
+/* Marquee for the ticker band. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee { animation: marquee 42s linear infinite; }
+
+/* Snappy reveal-on-load utility (staggered via inline delay). */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal { opacity: 0; animation: reveal 0.55s var(--ease-snap) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  .reveal { opacity: 1; }
+}
+
+/* ---- The Leash additions ---- */
+@keyframes tick {
+  0% { color: var(--color-fg); }
+  30% { color: var(--color-accent); }
+  100% { color: inherit; }
+}
+.tick { animation: tick 0.9s var(--ease-snap) 1; }
+
+@keyframes slam {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+.capline-draw { transform-origin: left; animation: slam 0.6s var(--ease-snap) both; }
+
+.stripes-danger {
+  background-image: repeating-linear-gradient(-45deg, #2a0808 0 8px, transparent 8px 16px);
+}
