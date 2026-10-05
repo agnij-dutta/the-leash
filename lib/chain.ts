@@ -121,11 +121,18 @@ export interface ResolvedPayee {
 }
 
 /** Map the model's free-text `to` onto an on-chain merchant + token account. */
+const VENDOR_SUFFIXES = new Set(["", "ltd", "inc", "llc", "limited", "corp", "corporation", "co", "plc", "gmbh"]);
+
 export function resolvePayee(raw: string, d: Deployment): ResolvedPayee {
   const s = (raw || "").trim();
   const norm = s.toLowerCase().replace(/[^a-z0-9]/g, "");
   const vendorNorm = d.vendorName.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (s === d.vendor || (norm.length > 0 && norm === vendorNorm)) {
+  // The model often writes the vendor with a legal suffix ("Kibble Co. Ltd").
+  // Accept exactly the vendor name plus one corporate suffix, nothing looser:
+  // a prefix match would let "Kibble Co. attacker wallet" pass as the vendor.
+  const suffix = norm.startsWith(vendorNorm) ? norm.slice(vendorNorm.length) : null;
+  const isVendorName = norm.length > 0 && suffix !== null && VENDOR_SUFFIXES.has(suffix);
+  if (s === d.vendor || isVendorName) {
     return { raw: s, merchant: new PublicKey(d.vendor), tokenAccount: new PublicKey(d.vendorAta), kind: "vendor" };
   }
   if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s)) {

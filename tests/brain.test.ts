@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseAmountArg, pickAmount, scripted } from "../lib/brain";
+import { isToolUseFailed, parseAmountArg, pickAmount, scripted } from "../lib/brain";
 import { cleanHistory, MAX_HISTORY, MAX_PROMPT } from "../lib/leash";
 
 const persona = { vendorName: "Kibble Co.", vendorAddress: "V", maxPerTx: 5, totalCap: 1000, vaultBalance: 1000 };
@@ -44,4 +44,10 @@ test("parseAmountArg reads numbers out of string tool arguments", () => {
   assert.equal(parseAmountArg("1,200.50"), 1200.5);
   assert.ok(Number.isNaN(parseAmountArg("all of it")));
   assert.ok(Number.isNaN(parseAmountArg(undefined)));
+});
+
+test("isToolUseFailed recognises only the provider's malformed-tool-call error", () => {
+  assert.equal(isToolUseFailed(JSON.stringify({ error: { code: "tool_use_failed", message: "missing properties" } })), true);
+  assert.equal(isToolUseFailed(JSON.stringify({ error: { code: "rate_limit_exceeded" } })), false);
+  assert.equal(isToolUseFailed("<html>bad gateway</html>"), false);
 });

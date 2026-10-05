@@ -107,6 +107,10 @@ export async function think(history: ChatMsg[], persona: PersonaCtx): Promise<Th
     const body = await res.text();
     const recovered = recoverFailedGeneration(body);
     if (recovered) return { reply: "", call: recovered, source: p.name };
+    // A tool call the provider rejected with no recoverable arguments never
+    // reached `pay`, so it is a held turn, not a crash for the visitor.
+    if (isToolUseFailed(body))
+      return { reply: "(the model produced a malformed tool call, so nothing was paid)", call: null, source: p.name };
     throw new Error(`LLM ${res.status}: ${body.slice(0, 200)}`);
   }
   const data = (await res.json()) as {
@@ -125,6 +129,16 @@ export async function think(history: ChatMsg[], persona: PersonaCtx): Promise<Th
     }
   }
   return { reply, call, source: p.name };
+}
+
+/** True when the provider rejected the model's tool call as malformed. */
+export function isToolUseFailed(body: string): boolean {
+  try {
+    const j = JSON.parse(body) as { error?: { code?: string } };
+    return j.error?.code === "tool_use_failed";
+  } catch {
+    return false;
+  }
 }
 
 /** Pull `pay` arguments out of Groq's 400 `tool_use_failed` error body. */

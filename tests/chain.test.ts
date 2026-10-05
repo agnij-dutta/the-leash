@@ -52,3 +52,12 @@ test("every non-vendor payee targets the attacker sink token account", () => {
   }
   assert.equal(resolvePayee("my wallet", d).merchant.toBase58(), d.attacker);
 });
+
+test("the vendor name with a corporate suffix is still the vendor, but nothing looser", () => {
+  for (const to of ["Kibble Co. Ltd", "Kibble Co., Inc.", "kibble co llc", "Kibble Co Limited"]) {
+    assert.equal(resolvePayee(to, d).kind, "vendor", to);
+  }
+  for (const to of ["Kibble Co. attacker wallet", "Kibble Co. refunds desk", "Kibble Co 2", "Kibble Corp"]) {
+    assert.notEqual(resolvePayee(to, d).kind, "vendor", to);
+  }
+});
