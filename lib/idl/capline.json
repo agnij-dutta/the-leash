@@ -462,6 +462,19 @@
         145,
         238
       ]
+    },
+    {
+      "name": "Withdrawn",
+      "discriminator": [
+        20,
+        89,
+        223,
+        198,
+        194,
+        124,
+        219,
+        13
+      ]
     }
   ],
   "errors": [
@@ -544,6 +557,16 @@
       "code": 6015,
       "name": "Ap2HashMismatch",
       "msg": "signed message does not match the committed AP2 hash"
+    },
+    {
+      "code": 6016,
+      "name": "ZeroAmount",
+      "msg": "amount must be greater than zero"
+    },
+    {
+      "code": 6017,
+      "name": "Ap2ProofNotSelfContained",
+      "msg": "Ed25519 instruction must reference its own data (instruction index u16::MAX)"
     }
   ],
   "types": [
@@ -710,6 +733,26 @@
           },
           {
             "name": "spent",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Withdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mandate",
+            "type": "pubkey"
+          },
+          {
+            "name": "to",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
             "type": "u64"
           }
         ]
